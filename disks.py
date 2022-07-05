@@ -1,14 +1,34 @@
 from paraview.util.vtkAlgorithm import *
 import paraview
 import paraview.simple
+from os import getenv
 
 @smproxy.filter()
 @smproperty.input(name="InputDataset", port_index=0)
 @smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
 
 class Disks(VTKPythonAlgorithmBase):
+    def load_selections(self):
+        import os
+        if os.path.isfile(self.saved_selection_file):
+          import numpy as np
+          self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",")
+        else:
+          print("no saved selections")
+          self.selections = []
+        self.Modified()
+
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
+        self.saved_selection_file = getenv("HOME") + "/picks.csv"
+        self.load_selections()
+
+    @smproperty.stringvector(name="SavedSelection", default_values=getenv("HOME") + "/picks.csv")
+    def SetSavedSelection(self, value):
+        self.saved_selection_file = value
+        self.load_selections()
+        self.Modified()
+        return
 
     def FillInputPortInformation(self, port, info):
         info.Set(self.INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid")
@@ -22,13 +42,18 @@ class Disks(VTKPythonAlgorithmBase):
         from math import sqrt
         import  numpy as np
 
+        print('hello', self.selections)
+
+        if len(self.selections) < 2:
+          self.selections = []
+          output.ShallowCopy(input)
+          return 1
+
+        slices = vtkAppendFilter()
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        if 'selections' not in input.FieldData.keys():
-          return 1
-
-        selections = input.FieldData['selections']
+        selections = self.selections
 
         def cross(a,b):
           return np.array([a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]])
@@ -83,60 +108,3 @@ class Disks(VTKPythonAlgorithmBase):
         disks.Update()
         output.ShallowCopy(disks.GetOutput())
         return 1
-
-#         nselections = -1
-#         proxy = paraview.simple.GetActiveSource()
-#         if proxy is not None:
-#           active_selection = proxy.GetSelectionInput(proxy.Port)
-#           if (active_selection is not None) and (len(active_selection.IDs) > 0):
-#             pids = active_selection.IDs[1::2]
-#             nselections = len(pids)
-#         if nselections < 2:
-#           print("need at least two selection points")
-#           output.ShallowCopy(input)
-#         else:
-#           selections = dsa.WrapDataObject(input).Points[pids,:]
-#           slices = vtkAppendFilter()
-#           p0 = selections[0]
-#           R = sqrt(p0[0]*p0[0] + p0[1]*p0[1] + p0[2]*p0[2])
-# 
-#           def cross(a,b):
-#             return[a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
-#       
-#           for i,p1 in enumerate(selections[1:]):
-#             cutter = vtkCutter()
-#             cutter.SetInputData(input)
-#             cut_normal = cross(p0, p1)
-#             plane0 = vtkPlane()
-#             plane0.SetOrigin(0.0, 0.0, 0.0)
-#             plane0.SetNormal(cut_normal) 
-#             cutter.SetCutFunction(plane0)
-#             clipper = vtkClipDataSet()
-#             clipper.SetInputConnection(cutter.GetOutputPort())
-#             clip_normal = cross(cut_normal, p0)
-#             plane1 = vtkPlane()
-#             plane1.SetOrigin(0.0, 0.0, 0.0)
-#             plane1.SetNormal(clip_normal)
-#             clipper.SetClipFunction(plane1)
-#             clipper.Update()
-#             slice = clipper.GetOutput()
-#             ncells = slice.GetNumberOfCells()
-#             tArray = dsa.numpy_support.numpy_to_vtk((i*np.ones(ncells)).astype('u1'))
-#             tArray.SetName('tag')
-#             slice.GetCellData().AddArray(tArray)
-#             slices.AddInputData(slice)
-#             del cutter
-#             del plane0
-#             del clipper
-#             del plane1
-# 
-#           slices.Update()
-#           output.ShallowCopy(slices.GetOutput())
-# 
-#           selections = dsa.numpy_support.numpy_to_vtk(selections)
-#           selections.SetName("selections")
-#           output.GetFieldData().AddArray(selections)
-
-
-
-

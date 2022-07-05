@@ -1,40 +1,32 @@
 from paraview.util.vtkAlgorithm import *
 import paraview
 import paraview.simple
+from os import getenv
 
 @smproxy.filter()
 @smproperty.input(name="InputDataset", port_index=0)
 @smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
 
 class Clipper(VTKPythonAlgorithmBase):
+    def load_selections(self):
+        import os
+        if os.path.isfile(self.saved_selection_file):
+          import numpy as np
+          self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",")
+        else:
+          print("no saved selections")
+          self.selections = []
+        self.Modified()
+
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
-        self.save_selection_file = "none"
-        self.selections = []
+        self.saved_selection_file = getenv("HOME") + "/picks.csv"
+        self.load_selections()
 
-    @smproperty.stringvector(name="SavedSelection", default_values="none")
+    @smproperty.stringvector(name="SavedSelection", default_values=getenv("HOME") + "/picks.csv")
     def SetSavedSelection(self, value):
         self.saved_selection_file = value
-        if self.selections == [] and self.saved_selection_file != None:
-          import os
-          if os.path.isfile(self.saved_selection_file):
-            import numpy as np
-            self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",")
-        else:
-          if self.saved_selection_file == None:
-            self.selections = []
-          else:
-            import numpy as np
-            np.savetxt(self.saved_selection_file, self.selections, delimiter = ",")
-        self.Modified()
-        return
-
-    @smproperty.intvector(name="ClearSelection", default_values=0)
-    def SetClearSelection(self, value):
-        print("CLEAR", value)
-        if value > 0:
-          self.selections = []
-          print("clearing selections:", self.selections)
+        self.load_selections()
         self.Modified()
         return
 
@@ -53,10 +45,14 @@ class Clipper(VTKPythonAlgorithmBase):
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        if 'selections' not in input.FieldData.keys():
+        print('hello', self.selections)
+
+        if len(self.selections) < 2:
+          self.selections = []
+          output.ShallowCopy(input.VTKObject)
           return 1
 
-        selections = input.FieldData['selections']
+        selections = self.selections
 
         def cross(a,b):
           return np.array([a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]])
