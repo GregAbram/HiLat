@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+#SBATCH -J atm 
+#SBATCH -o atm.out 
+#SBATCH -e atm.out  
+#SBATCH -p skx-normal
+#SBATCH -N 1       
+#SBATCH -n 3        
+#SBATCH -t 04:00:00  
+#SBATCH -A A-ccvis
+
+cd $SCRATCH/darin
+
+VARIABLES='PRECC,PRECT,PS,PSL,Q300,Q500,Q850,QREFHT,T300,T500,T850,TMQ,TREFHT,U300,U500,U850,UBOT,V300,V500,V850,VBOT,Z300,Z500,Z850'
+
+module purge
+module load intel/18.0.2 impi/18.0.0 qt5
+module load hdf5 netcdf python2 vtk
+export PYTHONPATH=$TACC_VTK_LIB/python2.7/site-packages:$PYTHONPATH
+
+if ! test -e atm ; then
+  mkdir atm
+fi
+
+variables=PRECC,PRECT,PS,PSL,Q300,Q500,Q850,QREFHT,T300,T500,T850,TMQ,TREFHT,U300,U500,U850,UBOT,V300,V500,V850,VBOT,Z300,Z500,Z850
+meshfile=hf_output/arcticx4v1pg2_scrip.nc
+data_regex='hf_output/20220526.WCYCL1950.arcticx4v1pg2_oARRM60to10.HFoutput.cori-knl.eam.h4.0001-*-00000.nc'
+tvar=time
+otemplate=atm/atm_%08d.vtu
+
+if test 1 == 1 ; then
+  ibrun -np 3 \
+  vtkpython pull_atm_quads.py \
+    -meshfile $meshfile \
+    -data_regex "$data_regex" \
+    -vars $variables  \
+    -o $otemplate
+else
+  vtkpython tt.py "$data_regex" 
+fi
+  

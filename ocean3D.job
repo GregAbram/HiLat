@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+#SBATCH -J ocean3D
+#SBATCH -o ocean3D.out
+#SBATCH -e ocean3D.err  
+#SBATCH -p skx-normal
+#SBATCH -N 1       
+#SBATCH -n 3        
+#SBATCH -t 08:00:00  
+#SBATCH -A A-ccvis
+
+module purge
+module load intel/18.0.2 impi/18.0.0 qt5 hdf5 netcdf python2 vtk
+export PYTHONPATH=$TACC_VTK_LIB/python2.7/site-packages:$PYTHONPATH
+
+
+cd $SCRATCH/darin
+if test ! -e ocean3D ; then
+  mkdir ocean3D
+fi
+
+echo XXXXXXXXXXXXXXXXX here we go XXXXXXXXXXXXXXXXX
+echo NOTE: only feb-apr!
+
+ibrun vtkpython stack.py \
+  -meshfile hf_output.link/ocean.ARRM60to10.180715.nc \
+  -datafile 'hf_output.link/20220526.WCYCL1950.arcticx4v1pg2_oARRM60to10.HFoutput.cori-knl.mpaso.hist.0001-0[234]-01_00000.nc' \
+  -vars salinity,temperature \
+  -o ocean3D/timestep_%08d.vtu \
+  -tdim Time \
+  -tint 24
+
+echo XXXXXXXXXXXXXXXXX    done    XXXXXXXXXXXXXXXXX

@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+#SBATCH -J advec 
+#SBATCH -o advec.out 
+#SBATCH -e advec.err
+#SBATCH -p skx-normal
+#SBATCH -N 1       
+#SBATCH -n 1        
+#SBATCH -t 06:00:00  
+#SBATCH -A A-ccvis
+
+module purge
+module load intel/18.0.2 impi/18.0.0 qt5
+module load hdf5 netcdf python2 vtk
+export PYTHONPATH=$TACC_VTK_LIB/python2.7/site-packages:$PYTHONPATH
+
+cd $SCRATCH/darin
+vtkpython do_advec.py

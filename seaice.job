@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+#SBATCH -J seaice 
+#SBATCH -o seaice.out 
+#SBATCH -e seaice.err  
+#SBATCH -p skx-dev
+#SBATCH -N 1       
+#SBATCH -n 3        
+#SBATCH -t 02:00:00  
+#SBATCH -A A-ccvis
+
+module purge
+module load intel/18.0.2 impi/18.0.0 qt5
+module load hdf5 netcdf python2 vtk
+export PYTHONPATH=$TACC_VTK_LIB/python2.7/site-packages:$PYTHONPATH
+
+cd $SCRATCH/darin
+
+if ! test -d seaice ; then
+  mkdir seaice
+fi
+
+ibrun vtkpython grid.py \
+  -meshfile hf_output.link/20220526.WCYCL1950.arcticx4v1pg2_oARRM60to10.HFoutput.cori-knl.mpassi.hist.am.highFrequencyOutput.0001-01-01.nc \
+  -datafile 'hf_output.link/20220526.WCYCL1950.arcticx4v1pg2_oARRM60to10.HFoutput.cori-knl.mpassi.hist.am.highFrequencyOutput.*' \
+  -vars 'iceAreaCell,iceVolumeCell,uVelocityGeo,vVelocityGeo,shear,divergence,congelation,frazilFormation' \
+  -o 'seaice/seaice_%08d.vtu'
+
+
