@@ -11,14 +11,10 @@ class Picker(VTKPythonAlgorithmBase):
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
         self.saved_selection_file = os.getenv('HOME') + '/picks.csv'
-        print("XXXXXXXXXXX", self.saved_selection_file)
-        print("self: ", self)
 
     @smproperty.stringvector(name="SavedSelection", default_values=os.getenv('HOME')+"/picks.csv")
     def SetSavedSelection(self, value):
         self.saved_selection_file = value
-        print("YYYYYYYYYYY", self.saved_selection_file)
-        print("self: ", self)
         self.Modified()
         return
 
@@ -33,8 +29,6 @@ class Picker(VTKPythonAlgorithmBase):
         from vtk.numpy_interface import dataset_adapter as dsa
         from math import sqrt
         import  numpy as np
-        print("ZZZZZZZZZZZ", self.saved_selection_file)
-        print("self: ", self)
         input = vtkUnstructuredGrid.GetData(inInfoVec[0], 0)
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
