@@ -461,4 +461,4 @@ You can apply the Clipper filter to *any* normalized surface data.  In our case 
 
 ## TruncatePathLine
 
-A python programmable filter to truncate pathlines by age
+A python programmable filter to truncate pathlines by age.  age=0 is the head of the pathline
