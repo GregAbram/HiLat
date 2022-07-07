@@ -458,3 +458,7 @@ This gyration is necessary because the Picker produces the picks.csv file as a s
 ## Note:
 
 You can apply the Clipper filter to *any* normalized surface data.  In our case the ocean data does not cover land areas, so will show holes in the wedge outer surface where there is land.   You can apply the Clipper to a sphere of radius *just less than one* to fill these holes.   These filters only work on vtkUnstructuredGrid data types; if you use a Sphere source to generate the sphere, you'll need to use the Append Datasets filter to convert it from PolyData to UnstructuredGrid.
+
+## TruncatePathLine
+
+A python programmable filter to truncate pathlines by age
