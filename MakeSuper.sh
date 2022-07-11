@@ -1,6 +1,8 @@
-echo "from paraview.util.vtkAlgorithm import *" >> HiLatFilters.py
+echo "from paraview.util.vtkAlgorithm import *" > HiLatFilters.py
 
 for i in `grep -l paraview.util.vtkAlgorithm *py` ; do
-  grep -v paraview.util.vtkAlgorithm $i >> HiLatFilters.py
+  if test $i != 'HiLatFilters.py' ; then
+    grep -v paraview.util.vtkAlgorithm $i >> HiLatFilters.py
+  fi
 done
   
