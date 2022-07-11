@@ -418,14 +418,30 @@ Given a comma separated set of variable names (eg: ocean,seaice,wbot...), a star
     
 will create one month daily pvd files.
 
-# Depth Scaling
+# HiLat Custom Filters
+
+This repo contains a set of custom filters for use with the hilat data.  To use them, first clone the repo:
+
+    git clone git@github.com:GregAbram/HiLat.git
+    
+Now for convenience, there is a shell file that gathers all the custom filters into a single python file that you can load en masse into Paraview:
+
+    cd HiLat
+    sh MakeSuper.sh
+    
+This will create a single file name HiLatFilters.py.   You can load this into Paraview to include all the custom filters.
+    
+The repo also contains a example PVSM file **TestData.pvsm** that sets up a simple dataset for testing the following.  Beginning with a Wavelet source, it creates a meter-scale (eg. += 6371000) volumetric shell with depth 0.05 of the redius and a surface dataset as vtkUnstructuredGrids (as required for the following filters).    **TestDataComplete.pvsm** shows this exmple after the folowing steps have been taken.
+
+## Depth Scaling
 
 The volumetric data - ocean3D - is very thin: the ocean is shallow compared to the radius of the Earth.   The DScale filter scales the depth by a factor given on its properties page, defaulting to 100.
 
-# Corner Cuts
+In the test data example, pass the thin shell data into the DScale filter, with the 'Scale' property set to 5.  If you look at slices of the original shell data and the slice you'll see we scaled the thickness of the shell by 5 - the equivalent of scaling the volumetric ocean data in depth.
+
+## Corner Cuts
 
 A useful visualization technique for the ocean data (eg. ocean3D) is to use a wedge of the Earth, with slices of the ocean3D data visible on the sides of the wedge; blank disks filling the remainder of the sides of the wedge, and the surface data clipped to the wedge.    Four custom Python filters are included to do this.
-
 
 First, however, these filters ***do not work*** when the data is left in meter cordinates.  We must first normalize the data to the unit sphere using a Python programmable filter containing:
 
@@ -434,25 +450,27 @@ First, however, these filters ***do not work*** when the data is left in meter c
     rmax = np.max(r)
     output.Points = output.Points / rmax
     
-Do not forget to check the Copy Arrays box!
+Add Python Programmanble Filters with this code to the Surface and DScale'd volumetric data.  Do not forget to check the Copy Arrays box!
 
 My apologies for the complexity here... this doesn't fit well in the Paraview paradigm,
 
-## Step 1: Selecting the Wedge Coordinates
+### Step 1: Selecting the Wedge Coordinates
 
-The wedge is selected using the included **Picker** filter.   Add it to the *normalized surface* data - eg. **ocean3D.pvd**, and Accept.    Now, with Picker highlighted, pick three points on the surface, beginning with the apex, then two other points in counter-clockwise fashion: first select the small '+' in the dotted box on the toolbar above the RenderView window.   Then select the 'select points on' button (or use the 'd' hot button) three times to select the three points.   **Make sure they are on the front face of the surface!**.   When you have done so, poke the 'Reload Python Module' button on the Picker property page.   This should store your pick points in your home directory as **picks.csv** (you can change this location on the property page).  Now hide the Picker output in the Pipeline browser.
+The wedge is selected using the included **Picker** filter.   Add it to the *normalized surface* data - eg. **ocean3D.pvd** (or, in the test data example, to the noralized Surface data) , and Accept.    Now, with Picker highlighted, pick three points on the surface, beginning with the apex, then two other points in counter-clockwise fashion: first select the small '+' in the dotted box on the toolbar above the RenderView window.   Then select the 'select points on' button (or use the 'd' hot button) three times to select the three points.   **Make sure they are on the front face of the surface!**.   When you have done so, poke the 'Reload Python Module' button on the Picker property page.   This should store your pick points in your home directory as **picks.csv** (you can change this location on the property page).  Now hide the Picker output in the Pipeline browser.
 
-## Step 2: Generating the Wedge Data
+### Step 2: Generating the Wedge Data
 
-Now add the Clipper filter to the normalized surface data and Accept.   It will load the pick points from the csv file and clip out the wedge of the surface data.  Now add the Disks filter to the normalized surface data and Accept.   It will generate the faces of the wedge, offset very slightly inward so as not to interfere with the slices of the volumetric data.
+Now add the Clipper filter to the normalized surface data and Accept.   It will load the pick points from the csv file and clip out the wedge of the surface data.  Hit 'Accept' and hide the normalized surface data; you'll see the selected portion of the surface data.
+
+Now add the Disks filter to the normalized surface data and Accept.   It will generate the faces of the wedge, offset very slightly inward so as not to interfere with the slices of the volumetric data.
 
 Now attach the Slicer filter to the normalized depth-scaled **volumetric** data and Accept.   This will slice the volumetric data along the wedge sides.   Now you should be able to color the Slicer and Clipper outputs with the same variable and see them.
 
-## Changing the Wedge
+### Changing the Wedge
 
-After you have done the above steps, you can change the wedge geometry.   First, hide the Clipper, Slicer and Disks outputs and make the Picker visible.  Now remove the old pick points by clocking the trash can on the toolbar, then choosing three new points, then hitting 'Reload Python Module' button on the Clipper, Slicer and Disks filter and making them visible again.   And hiding the Picker as well.
+After you have done the above steps, you can change the wedge geometry.   First, hide the Clipper, Slicer and Disks outputs and make the Picker visible.  Now remove the old pick points by clocking the trash can on the toolbar, then choosing three new points, then hitting 'Reload Python Module' button on the Picker to set the new points.   Now hide teh picker again, and reveal the Clipper, Slicer and Disks.  They;ll reflect the *original* selction for the moment; hit 'Reload Python Module' in each and see the new wedge.
 
-This gyration is necessary because the Picker produces the picks.csv file as a side effect - changes to the pick points do not trigger re-running the others.   We reload the Python code to force an update.
+This gyration is necessary because the Picker produces the picks.csv file as a side effect - changes to the pick points do not trigger re-running the others.   We have to reload the Python code to force an update.
 
 
 ## Note:
