@@ -22,7 +22,7 @@ This will create links to the actual data files but which are aligned temporally
 
 This will create pvd files aggregating all the timestep data.   These will then be used in Paraview.
 
-##Atmosphere
+## Atmosphere
 
 
 The 3 hourly atmosphere data data in a set of files containing 30 days of data: 
@@ -83,7 +83,7 @@ Code to get this info from an atmosphere data file... preferred this to ncdump -
         print('+', var.name, var.long_name, var.units)
    
 
-##atm.py and atm.job
+## atm.py and atm.job
 
 The 'grid' is in arcticx4v1pg2_scrip.nc.   This is a netcdf 'table' file with a 2D variables *grid\_corner\_lat* and *grid\_corner\_lon*.   The i'th row of these contain the lat(lon) of the corners of the i'th quad.  The unique lat/lon points from these corner variables from the grid file correspond approximately to the data points in the data files.  This correspondence is made exact by rounding the lat/lon points to 1 part in 1000000.
 
@@ -94,7 +94,7 @@ Then, for each data file, the map is used to associate data values with the vert
 **atm.job** is an sbatch wrapper that calls vtkpython to run atm.py.  Parameters are appropriate parameters: all the above variables, a regex pointing at the input data files, the input grid file, and the output template.   It **ibrun**s vtkpython with 3 processes to run atm.py 3-way parallel.
 
 
-##wind.py and wind.job
+## wind.py and wind.job
 
 **wind.py** takes the meridional and zonal components of the wind at 4 levels to create 4 wind vectors on the XYZ sphere.   To do so it creates U and V tangent vectors and multiplies these by the input meridional and zonal components.   Note that this takes no parameters; it assumes the input are VTU files contained in an 'atm' subdirectory.  This has to match the output template of the atm step.  The output files are placed in a 'wind' subdirectory.   Again, MPI enabled.
 
@@ -111,7 +111,7 @@ so the wind vectors are available at 4 different pressure surfaces.
 
 **wind.job** is an sbatch wrapper for vtkpython to run wind.py 3-way parallel.
 
-##advec.py
+## advec.py
 
 **advec.py** computes *pathlines* of the time-varying wind data. To quote Wikipedia, "Pathlines are the trajectories that individual fluid particles follow. These can be thought of as "recording" the path of a fluid element in the flow over a certain period. The direction the path takes will be determined by the streamlines of the fluid at each moment in time.".  
 
@@ -136,7 +136,7 @@ The arguments to advec.py are:
 -  -X n               (testing seed n)
 -   vtu               file containing vector field time series
 
-###A note on visualizing advec pathlines
+### A note on visualizing advec pathlines
 advec.py adds a timestamp to each point along the pathlines.   By passing the pathlines into a Python Calculator using:
 
 > age = np.max(inputs[0].PointData['timestamp']) - inputs[0].PointData['timestamp']
@@ -146,7 +146,7 @@ you convert the timestamp on each point to its age in the current timestep.   If
 ###Another note on visualizing advec pathlines`
 The atmosphere data and its resulting pathlines are on the unit sphere.   You can use the Calculator to scale the coordinates to match the ocean and seaice data, which are in real-world meters.   In the resulting coordinates, the velocity units one the path lines are correct.
 
-##Ocean/SeaIce Grid
+## Ocean/SeaIce Grid
 
 Ocean and seaice data are processed to VTK data files (unstructured grids, .vtu extension) by the **grid.py** python code.
 
@@ -173,7 +173,7 @@ Code to get the contents of Ocean/SeaIce netcdf files::
         u = "None"
       print v, ': (', ','.join(dims), ')', ln, ud
 
-###Grid file
+### Grid file
 
 The grid file is: ocean.ARRM60to10.180715.nc containing 
 
@@ -260,7 +260,7 @@ with:
 We note the presence of *layerThickness* and *maxLevelCell* which may be used to 'stack' multi-layer variables.
 
 
-###Variables
+### Variables
 The ocean data is incomplete.   One data file (20220526.WCYCL1950.arcticx4v1pg2_oARRM60to10.HFoutput.cori-knl.mpaso.hist.0001-01-01_00000.nc
 ) is avalable and contains:
 
@@ -280,7 +280,7 @@ with:
 
 Note the multi-layer salinity and temperature, and that there is no explicit time.   The number of timesteps and file names would indicate daily.
 
-###grid.py
+### grid.py
 
 grid.py extracts a triangle grid from a 'meshfile', then for each datafile matching a regex, it creates a set of timestep files by pulling data for each timestep in the datafile, installing it on the grid, and writing it to the output as a vtu file.  Data files are expected to end in .....yyyy-mm-dd.nc, and a dimension from the file should contain the number of timesteps in the file.  The month, year and time interval - the number pwd
 of hours bewteen timesteps - are used to create a time-offset in hours for each timestep and this value is passed through a template to create output file names.
@@ -298,7 +298,7 @@ Arguments to grid.py are:
 -  -l layer             for multi-layer data, whch layer (0)
 
 
-###stack.py
+### stack.py
 
 stack.py is similar to grid.py, but it assumes that the mesh file has two special variables:  *layerThickness* and *bottomDepth*.    Variables that are dimensioned (time, ncells, nVertLevels) contain data for each layer.   stack.py uses this data to create a space-filling grid using triangular prisms to join triangles from othe top of the layer to the bottom.    
 
@@ -315,7 +315,7 @@ Arguments to stack.py are:
 -  -tint varname        interval between timesteps (24)
 -  -tdim varname        name of dimension containing the number of timesteps ('Time')
 
-##Ice Data
+## Ice Data
 
 Unlike the ocean data, each ice data file contains its own 
 
