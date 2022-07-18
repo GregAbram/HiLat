@@ -45,7 +45,7 @@ class TruncatePathLine(VTKPythonAlgorithmBase):
 
         new_cells = []
         new_cell_locations = []
-        for cell in cells: 
+        for cell in cells:
           cell_age = age[cell]
           if cell_age[-1] < self.max_age:
               k = len(cell) - np.argmax(cell_age < self.max_age)
@@ -55,9 +55,6 @@ class TruncatePathLine(VTKPythonAlgorithmBase):
         new_cell_locations = np.array(new_cell_locations)
 
         n_new_cells = len(new_cells)
-        print(age[cells[0]])
-        print('aaaaaa')
-        print(age[new_cells[0]])
 
         referenced_points = np.hstack(new_cells)
         referenced_points_mask = np.zeros(inpt.GetNumberOfPoints())
@@ -81,7 +78,7 @@ class TruncatePathLine(VTKPythonAlgorithmBase):
 
         for array_name in inpt.PointData.keys():
             clipped.PointData.append(inpt.PointData[array_name][referenced_points_mask == 1], array_name)
-            
+
         clipped.PointData.append(age[referenced_points_mask == 1], 'age')
 
         outpt.ShallowCopy(clipped.VTKObject)
