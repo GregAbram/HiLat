@@ -16,7 +16,6 @@ class Disks(VTKPythonAlgorithmBase):
         else:
           print("no saved selections")
           self.selections = []
-        print("CCCC")
 
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
@@ -53,8 +52,6 @@ class Disks(VTKPythonAlgorithmBase):
         from math import sqrt
         import  numpy as np
 
-        print('hello', self.selections)
-
         if len(self.selections) < 2:
           self.selections = []
           output.ShallowCopy(input)
@@ -81,7 +78,6 @@ class Disks(VTKPythonAlgorithmBase):
 
         corner = selections[0]
         R = sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
-        print("R=",R)
         corner = nrm(corner)
         first = True
         for p in selections[1:]:

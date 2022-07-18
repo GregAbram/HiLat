@@ -315,6 +315,10 @@ Arguments to stack.py are:
 -  -tint varname        interval between timesteps (24)
 -  -tdim varname        name of dimension containing the number of timesteps ('Time')
 
+### Note on January
+
+There are only 30 timesteps in January in the ocean data.    To make this work I renamed the January ocean data netcdf files to start on Jan 2.
+
 ## Ice Data
 
 Unlike the ocean data, each ice data file contains its own 
@@ -480,3 +484,31 @@ You can apply the Clipper filter to *any* normalized surface data.  In our case 
 ## TruncatePathLine
 
 A python programmable filter to truncate pathlines by age.  age=0 is the head of the pathline
+
+## Add A Date
+
+Select one of the PVD readers.   Attach a programmable filter containing:
+
+```
+import numpy as np
+Months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split()
+DaysInMonthCumSum = np.array([0, 31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334, 365])
+
+t = int(inputs[0].GetInformation().Get(vtk.vtkDataObject.DATA_TIME_STEP()))
+
+m = np.argmax(DaysInMonthCumSum > t)
+d = t - DaysInMonthCumSum[m-1] + 1
+a = vtk.vtkStringArray()
+a.SetNumberOfComponents(1)
+a.SetNumberOfTuples(1)
+v = '%s %d' % (Months[m-1], d)
+a.SetValue(0, v)
+a.SetName('DateString')
+output.GetFieldData().AddArray(a)
+```
+
+Then attach a Python Annotation filter to that, with the expression 
+
+```
+DateString.GetValue(0)
+```
