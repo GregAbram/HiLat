@@ -16,12 +16,22 @@ class Disks(VTKPythonAlgorithmBase):
         else:
           print("no saved selections")
           self.selections = []
-        self.Modified()
 
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
         self.saved_selection_file = getenv("HOME") + "/picks.csv"
         self.load_selections()
+        self.offset = 0.001
+        self.Modified()
+
+    @smproperty.xml("""
+        <DoubleVectorProperty name="Offset" number_of_elements="1" default_values="0.001" command="SetOffset">
+            <DoubleRangeDomain name="range" />
+            <Documentation>Set offset of disks</Documentation>
+        </DoubleVectorProperty>""")
+    def SetOffset(self, o):
+        self.offset = o
+        self.Modified()
 
     @smproperty.stringvector(name="SavedSelection", default_values=getenv("HOME") + "/picks.csv")
     def SetSavedSelection(self, value):
@@ -41,8 +51,6 @@ class Disks(VTKPythonAlgorithmBase):
         from vtk.numpy_interface import dataset_adapter as dsa
         from math import sqrt
         import  numpy as np
-
-        print('hello', self.selections)
 
         if len(self.selections) < 2:
           self.selections = []
@@ -70,7 +78,6 @@ class Disks(VTKPythonAlgorithmBase):
 
         corner = selections[0]
         R = sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
-        print("R=",R)
         corner = nrm(corner)
         first = True
         for p in selections[1:]:
@@ -81,7 +88,7 @@ class Disks(VTKPythonAlgorithmBase):
             slice_normal = nrm(cross(p0, corner))
           v1 = nrm(cross(slice_normal, corner))
           A = 2 * np.pi * (np.arange(nsamples)/nsamples)
-          xyz = (0.001 * slice_normal) + R*np.column_stack(corner[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+          xyz = (self.offset * slice_normal) + R*np.column_stack(corner[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
           xyz = dsa.numpy_support.numpy_to_vtk(xyz)
           ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*nsamples, [0]*nsamples, np.arange(nsamples), np.mod(np.arange(nsamples)+1, nsamples))))
           ca = vtkCellArray()

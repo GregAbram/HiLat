@@ -10,13 +10,13 @@ from netCDF4 import Dataset
 month_offset = [0, 31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 # This will convert MPAS netCDF files to VTK unstructured grids and write them
-# in the .vtu format.   
+# in the .vtu format.
 #
 # For the purposes of the comments herein, the term 'MPAS grid' will refer to the
-# mostly-hex grid that MPAS operates on, and the 'VTK grid' will refer to the 
+# mostly-hex grid that MPAS operates on, and the 'VTK grid' will refer to the
 # all-triangle VTK-format grid
 #
-# Every non-edge vertex of the MPAS grid (eg. with 3 incident MPAS cells) will 
+# Every non-edge vertex of the MPAS grid (eg. with 3 incident MPAS cells) will
 # correspond to a triangle in the VTK grid, linking the centers of the three
 # MPAS cells that are incident on the vertex. Similarly, every cell of the MPAS
 
@@ -24,16 +24,15 @@ month_offset = [0, 31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334]
 # center of the MPAS cell.
 #
 # Variables on the MPAS grid that are defined on the MPAS cells are directly
-# transported to the vertices of the VTK grid.   Variables that are defined 
+# transported to the vertices of the VTK grid.   Variables that are defined
 # on the vertices of the MPAS grid are migrated to the cell centers (by averaging
-# the vertex values for the cell) and then transported to the vertices of the 
+# the vertex values for the cell) and then transported to the vertices of the
 # VTK grid.
 #
 # NOTE: this will autodetect results and not re-create them!
 
 def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, time_int, time_dim, output_template, uvw):
 
-    print(data_regex)
     ncfiles = sorted(glob(data_regex))
 
     un_done_ncfiles = []
@@ -41,9 +40,8 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
 
     # Go through datafiles to check which have already been created.   While at it,
     # do several checks on data consistency.  Here we trim to the set of nc files that
-    # this rank will consider. 
+    # this rank will consider.
 
-    print(ncfiles)
     for ncfile in ncfiles[rank::size]:
       ds = Dataset(ncfile)
 
@@ -57,7 +55,6 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
       # files are all present, we don't 'need' the nc file
 
       y,m,d = [int(i) for i in ncfile.split('.')[-2].split('_')[-2].split('-')]
-      print(y,m,d)
 
       day = month_offset[(m - 1)] + (d - 1)
       hour = day * 24
@@ -66,7 +63,6 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
 
         tstep = hour + tindx*time_int
         fname = output_template % tstep
-        print(fname)
 
         if not os.path.isfile(fname):
           need = 1
@@ -98,9 +94,9 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
       print("nothing to do")
       sys.exit(1)
 
-    # Now we load the mesh, creating an unstructured grid with triangles 
+    # Now we load the mesh, creating an unstructured grid with triangles
     # joining the hex-cell centers.  In this grid, vertices correspond to
-    # cells in the hex grid and triangles correspond to vertices of the 
+    # cells in the hex grid and triangles correspond to vertices of the
     # hex grid that have 3 incident edges - eg. are internal to the hex grid
 
     ds = Dataset(meshfile)
@@ -135,9 +131,9 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
 
     boundary_vertices = np.unique(np.where(cov == 0))
 
-    # The VTK triangle k corresponds to the k'th non-boundary 
-    # vertex of the MPAS grid, and will join the VTK vertices 
-    # corresponding to the 3 MPAS cells incident on that MPAS 
+    # The VTK triangle k corresponds to the k'th non-boundary
+    # vertex of the MPAS grid, and will join the VTK vertices
+    # corresponding to the 3 MPAS cells incident on that MPAS
     # vertex.   Subtract 1 due to FORTRAN indexing in the MPAS
     # grid
 
@@ -231,7 +227,6 @@ def MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, tim
       timesteps = ds.dimensions[time_dim].size
 
       y,m,d = [int(i) for i in ncfile.split('.')[-2].split('_')[-2].split('-')]
-      print(y,m,d)
 
       day = month_offset[(m - 1)] + (d - 1)
       hour = day * 24
@@ -329,7 +324,7 @@ if __name__ == '__main__':
 
   args = sys.argv[1:]
   while len(args) > 0:
-    if args[0] == '-rs': 
+    if args[0] == '-rs':
       rank = int(args[1])
       size = int(args[2])
       args = args[3:]
@@ -363,9 +358,9 @@ if __name__ == '__main__':
     else:
       print('unknown arg:', args[0])
       syntax()
-      
+
   if meshfile == "" or data_regex == "":
     syntax()
-        
+
 
   MPAS_to_VTU(rank, size, meshfile, data_regex, datavars, gridvars, layer, time_int, time_dim, output_template, uvw)

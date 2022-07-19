@@ -45,8 +45,6 @@ class Clipper(VTKPythonAlgorithmBase):
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        print('hello', self.selections)
-
         if len(self.selections) < 2:
           self.selections = []
           output.ShallowCopy(input.VTKObject)
@@ -76,7 +74,7 @@ class Clipper(VTKPythonAlgorithmBase):
         cut0 = cross(corner, p1)
         plane0 = vtkPlane()
         plane0.SetOrigin(0.0, 0.0, 0.0)
-        plane0.SetNormal(cut0) 
+        plane0.SetNormal(cut0)
         clip0.SetClipFunction(plane0)
 
         clip1 = vtkClipDataSet()
@@ -84,7 +82,7 @@ class Clipper(VTKPythonAlgorithmBase):
         cut1 = cross(p2, corner)
         plane1 = vtkPlane()
         plane1.SetOrigin(0.0, 0.0, 0.0)
-        plane1.SetNormal(cut1) 
+        plane1.SetNormal(cut1)
         clip1.SetClipFunction(plane1)
 
         clip1.Update()
@@ -96,6 +94,3 @@ class Clipper(VTKPythonAlgorithmBase):
         del plane1
 
         return 1
-
-
-

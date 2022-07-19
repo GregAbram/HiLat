@@ -44,8 +44,6 @@ class Slicer(VTKPythonAlgorithmBase):
         input = vtkUnstructuredGrid.GetData(inInfoVec[0], 0)
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        print('hello', self.selections)
-
         if len(self.selections) < 2:
           self.selections = []
           output.ShallowCopy(input)
@@ -57,14 +55,14 @@ class Slicer(VTKPythonAlgorithmBase):
 
         def cross(a,b):
           return[a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
-    
+
         for i,p1 in enumerate(self.selections[1:]):
           cutter = vtkCutter()
           cutter.SetInputData(input)
           cut_normal = cross(p0, p1)
           plane0 = vtkPlane()
           plane0.SetOrigin(0.0, 0.0, 0.0)
-          plane0.SetNormal(cut_normal) 
+          plane0.SetNormal(cut_normal)
           cutter.SetCutFunction(plane0)
           clipper = vtkClipDataSet()
           clipper.SetInputConnection(cutter.GetOutputPort())
@@ -92,6 +90,3 @@ class Slicer(VTKPythonAlgorithmBase):
         output.GetFieldData().AddArray(selections)
 
         return 1
-
-
-
