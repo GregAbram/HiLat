@@ -44,19 +44,62 @@ class Slicer(VTKPythonAlgorithmBase):
         input = vtkUnstructuredGrid.GetData(inInfoVec[0], 0)
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
+        print("SLICER")
+
+        def cross(a,b):
+          return[a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
+
         if len(self.selections) < 2:
           self.selections = []
           output.ShallowCopy(input)
           return 1
 
-        slices = vtkAppendFilter()
-        p0 = self.selections[0]
-        R = sqrt(p0[0]*p0[0] + p0[1]*p0[1] + p0[2]*p0[2])
+        if len(self.selections) > 3:
+          print("using first 3 pick points")
+          self.selections = self.selections[:3]
 
-        def cross(a,b):
-          return[a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
+        if len(self.selections) == 2:
+          corner = False
+        else:
+          corner = True
 
-        for i,p1 in enumerate(self.selections[1:]):
+        print("FOOFOOFOO")
+        if corner:
+          slices = vtkAppendFilter()
+          p0 = self.selections[0]
+          for i,p1 in enumerate(self.selections[1:]):
+            cutter = vtkCutter()
+            cutter.SetInputData(input)
+            cut_normal = cross(p0, p1)
+            plane0 = vtkPlane()
+            plane0.SetOrigin(0.0, 0.0, 0.0)
+            plane0.SetNormal(cut_normal)
+            cutter.SetCutFunction(plane0)
+            clipper = vtkClipDataSet()
+            clipper.SetInputConnection(cutter.GetOutputPort())
+            clip_normal = cross(cut_normal, p0)
+            plane1 = vtkPlane()
+            plane1.SetOrigin(0.0, 0.0, 0.0)
+            plane1.SetNormal(clip_normal)
+            clipper.SetClipFunction(plane1)
+            clipper.Update()
+            slice = clipper.GetOutput()
+            ncells = slice.GetNumberOfCells()
+            tArray = dsa.numpy_support.numpy_to_vtk((i*np.ones(ncells)).astype('u1'))
+            tArray.SetName('tag')
+            slice.GetCellData().AddArray(tArray)
+            slices.AddInputData(slice)
+            del cutter
+            del plane0
+            del clipper
+            del plane1
+          slices.Update()
+          output.ShallowCopy(slices.GetOutput())
+        else:
+          print("ELSE")
+          slices = vtkAppendFilter()
+          p0 = self.selections[0]
+          p1 = self.selections[1]
           cutter = vtkCutter()
           cutter.SetInputData(input)
           cut_normal = cross(p0, p1)
@@ -64,27 +107,18 @@ class Slicer(VTKPythonAlgorithmBase):
           plane0.SetOrigin(0.0, 0.0, 0.0)
           plane0.SetNormal(cut_normal)
           cutter.SetCutFunction(plane0)
-          clipper = vtkClipDataSet()
-          clipper.SetInputConnection(cutter.GetOutputPort())
-          clip_normal = cross(cut_normal, p0)
-          plane1 = vtkPlane()
-          plane1.SetOrigin(0.0, 0.0, 0.0)
-          plane1.SetNormal(clip_normal)
-          clipper.SetClipFunction(plane1)
-          clipper.Update()
-          slice = clipper.GetOutput()
+          cutter.Update()
+          slice = cutter.GetOutput()
           ncells = slice.GetNumberOfCells()
-          tArray = dsa.numpy_support.numpy_to_vtk((i*np.ones(ncells)).astype('u1'))
+          tArray = dsa.numpy_support.numpy_to_vtk((0*np.ones(ncells)).astype('u1'))
           tArray.SetName('tag')
           slice.GetCellData().AddArray(tArray)
           slices.AddInputData(slice)
           del cutter
           del plane0
-          del clipper
-          del plane1
+          slices.Update()
+          output.ShallowCopy(slices.GetOutput())
 
-        slices.Update()
-        output.ShallowCopy(slices.GetOutput())
         selections = dsa.numpy_support.numpy_to_vtk(self.selections)
         selections.SetName("selections")
         output.GetFieldData().AddArray(selections)

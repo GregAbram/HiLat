@@ -22,6 +22,7 @@ class Disks(VTKPythonAlgorithmBase):
         self.saved_selection_file = getenv("HOME") + "/picks.csv"
         self.load_selections()
         self.offset = 0.001
+        self.sides = 100
         self.Modified()
 
     @smproperty.xml("""
@@ -31,6 +32,15 @@ class Disks(VTKPythonAlgorithmBase):
         </DoubleVectorProperty>""")
     def SetOffset(self, o):
         self.offset = o
+        self.Modified()
+
+    @smproperty.xml("""
+        <IntVectorProperty name="NSides" number_of_elements="1" default_values="100" command="SetNSides">
+            <IntRangeDomain name="range" />
+            <Documentation>Set offset of disks</Documentation>
+        </IntVectorProperty>""")
+    def SetNSides(self, n):
+        self.sides = n
         self.Modified()
 
     @smproperty.stringvector(name="SavedSelection", default_values=getenv("HOME") + "/picks.csv")
@@ -57,6 +67,15 @@ class Disks(VTKPythonAlgorithmBase):
           output.ShallowCopy(input)
           return 1
 
+        if len(self.selections) > 3:
+          print("using first 3 pick points")
+          self.selections = self.selections[:3]
+
+        if len(self.selections) == 2:
+          corner = False
+        else:
+          corner = True
+
         slices = vtkAppendFilter()
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
@@ -73,45 +92,66 @@ class Disks(VTKPythonAlgorithmBase):
           d = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2])
           return np.array([a[0]/d, a[1]/d, a[2]/d])
 
-        nsamples = 100
-        disks = vtkAppendFilter()
+        ns = self.sides
 
-        corner = selections[0]
-        R = sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
-        corner = nrm(corner)
-        first = True
-        for p in selections[1:]:
-          p0 = nrm(p)
-          if first:
-            slice_normal = nrm(cross(corner, p0))
-          else:
-            slice_normal = nrm(cross(p0, corner))
-          v1 = nrm(cross(slice_normal, corner))
-          A = 2 * np.pi * (np.arange(nsamples)/nsamples)
-          xyz = (self.offset * slice_normal) + R*np.column_stack(corner[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+        if corner:
+          disks = vtkAppendFilter()
+          corner = selections[0]
+          R = sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
+          corner = nrm(corner)
+          first = True
+          for p in selections[1:]:
+            p0 = nrm(p)
+            if first:
+              slice_normal = nrm(cross(corner, p0))
+            else:
+              slice_normal = nrm(cross(p0, corner))
+            v1 = nrm(cross(slice_normal, corner))
+            A = 2 * np.pi * (np.arange(ns)/ns)
+            xyz = (self.offset * slice_normal) + R*np.column_stack(corner[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+            xyz = dsa.numpy_support.numpy_to_vtk(xyz)
+            ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*ns, [0]*ns, np.arange(ns), np.mod(np.arange(ns)+1, ns))))
+            ca = vtkCellArray()
+            ca.SetCells(ns, ids)
+            co = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.arange(ns).astype('i8')*4)
+            ct =  dsa.numpyTovtkDataArray(np.array([VTK_TRIANGLE]*ns).astype('u1'))
+            so = dsa.WrapDataObject(vtkUnstructuredGrid())
+            so.Points = xyz
+            so.VTKObject.SetCells(ct, co, ca)
+            clipper = vtkClipDataSet()
+            if first:
+              clip_normal = nrm(cross(slice_normal, corner))
+            else:
+              clip_normal = nrm(cross(corner, slice_normal))
+            plane0 = vtkPlane()
+            plane0.SetOrigin(0.0, 0.0, 0.0)
+            plane0.SetNormal(clip_normal)
+            clipper.SetClipFunction(plane0)
+            clipper.SetInputData(so.VTKObject)
+            clipper.Update()
+            disks.AddInputData(clipper.GetOutput())
+            first = False
+          disks.Update()
+          output.ShallowCopy(disks.GetOutput())
+
+        else:
+
+          p0 = nrm(selections[0])
+          p1 = nrm(selections[1])
+          R = sqrt(p0[0]*p0[0] + p0[1]*p0[1] + p0[2]*p0[2])
+          slice_normal = nrm(cross(p0, p1))
+          v1 = nrm(cross(slice_normal, p0))
+          A = 2 * np.pi * (np.arange(ns)/ns)
+          xyz = (self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
           xyz = dsa.numpy_support.numpy_to_vtk(xyz)
-          ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*nsamples, [0]*nsamples, np.arange(nsamples), np.mod(np.arange(nsamples)+1, nsamples))))
+          ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*ns, [0]*ns, np.arange(ns), np.mod(np.arange(ns)+1, ns))))
           ca = vtkCellArray()
-          ca.SetCells(nsamples, ids)
-          co = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.arange(nsamples).astype('i8')*4)
-          ct =  dsa.numpyTovtkDataArray(np.array([VTK_TRIANGLE]*nsamples).astype('u1'))
+          ca.SetCells(ns, ids)
+          co = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.arange(ns).astype('i8')*4)
+          ct =  dsa.numpyTovtkDataArray(np.array([VTK_TRIANGLE]*ns).astype('u1'))
           so = dsa.WrapDataObject(vtkUnstructuredGrid())
           so.Points = xyz
           so.VTKObject.SetCells(ct, co, ca)
-          clipper = vtkClipDataSet()
-          if first:
-            clip_normal = nrm(cross(slice_normal, corner))
-          else:
-            clip_normal = nrm(cross(corner, slice_normal))
-          plane0 = vtkPlane()
-          plane0.SetOrigin(0.0, 0.0, 0.0)
-          plane0.SetNormal(clip_normal)
-          clipper.SetClipFunction(plane0)
-          clipper.SetInputData(so.VTKObject)
-          clipper.Update()
-          disks.AddInputData(clipper.GetOutput())
-          first = False
+          output.ShallowCopy(so.VTKObject)
 
-        disks.Update()
-        output.ShallowCopy(disks.GetOutput())
         return 1

@@ -42,6 +42,8 @@ class Clipper(VTKPythonAlgorithmBase):
         from math import sqrt
         import  numpy as np
 
+        print("CLOPPER")
+
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
@@ -49,6 +51,15 @@ class Clipper(VTKPythonAlgorithmBase):
           self.selections = []
           output.ShallowCopy(input.VTKObject)
           return 1
+
+        if len(self.selections) > 3:
+          print("using first 3 pick points")
+          self.selections = self.selections[:3]
+
+        if len(self.selections) == 2:
+          corner = False
+        else:
+          corner = True
 
         selections = self.selections
 
@@ -63,34 +74,48 @@ class Clipper(VTKPythonAlgorithmBase):
           return np.array([a[0]/d, a[1]/d, a[2]/d])
 
         nsamples = 100
-        disks = vtkAppendFilter()
 
-        corner = selections[0]
-        p1 = selections[1]
-        p2 = selections[2]
-
-        clip0 = vtkClipDataSet()
-        clip0.SetInputData(input.VTKObject)
-        cut0 = cross(corner, p1)
-        plane0 = vtkPlane()
-        plane0.SetOrigin(0.0, 0.0, 0.0)
-        plane0.SetNormal(cut0)
-        clip0.SetClipFunction(plane0)
-
-        clip1 = vtkClipDataSet()
-        clip1.SetInputConnection(clip0.GetOutputPort())
-        cut1 = cross(p2, corner)
-        plane1 = vtkPlane()
-        plane1.SetOrigin(0.0, 0.0, 0.0)
-        plane1.SetNormal(cut1)
-        clip1.SetClipFunction(plane1)
-
-        clip1.Update()
-        output.ShallowCopy(clip1.GetOutput())
-
-        del clip0
-        del plane0
-        del clip1
-        del plane1
+        if corner:
+          disks = vtkAppendFilter()
+          corner = selections[0]
+          p1 = selections[1]
+          p2 = selections[2]
+          clip0 = vtkClipDataSet()
+          clip0.SetInputData(input.VTKObject)
+          cut0 = cross(corner, p1)
+          plane0 = vtkPlane()
+          plane0.SetOrigin(0.0, 0.0, 0.0)
+          plane0.SetNormal(cut0)
+          clip0.SetClipFunction(plane0)
+          clip1 = vtkClipDataSet()
+          clip1.SetInputConnection(clip0.GetOutputPort())
+          cut1 = cross(p2, corner)
+          plane1 = vtkPlane()
+          plane1.SetOrigin(0.0, 0.0, 0.0)
+          plane1.SetNormal(cut1)
+          clip1.SetClipFunction(plane1)
+          clip1.Update()
+          output.ShallowCopy(clip1.GetOutput())
+          del clip0
+          del plane0
+          del clip1
+          del plane1
+        else:
+          print("NOT CORNER")
+          disks = vtkAppendFilter()
+          p0 = nrm(selections[0])
+          p1 = nrm(selections[1])
+          clip0 = vtkClipDataSet()
+          clip0.SetInputData(input.VTKObject)
+          cut0 = cross(p0, p1)
+          plane0 = vtkPlane()
+          plane0.SetOrigin(0.0, 0.0, 0.0)
+          plane0.SetNormal(cut0)
+          clip0.SetClipFunction(plane0)
+          clip0.Update()
+          output.ShallowCopy(clip0.GetOutput())
+          print("DONE?")
+          del clip0
+          del plane0
 
         return 1
