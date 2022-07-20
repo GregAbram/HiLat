@@ -42,8 +42,6 @@ class Clipper(VTKPythonAlgorithmBase):
         from math import sqrt
         import  numpy as np
 
-        print("CLOPPER")
-
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
@@ -101,7 +99,6 @@ class Clipper(VTKPythonAlgorithmBase):
           del clip1
           del plane1
         else:
-          print("NOT CORNER")
           disks = vtkAppendFilter()
           p0 = nrm(selections[0])
           p1 = nrm(selections[1])
@@ -114,7 +111,6 @@ class Clipper(VTKPythonAlgorithmBase):
           clip0.SetClipFunction(plane0)
           clip0.Update()
           output.ShallowCopy(clip0.GetOutput())
-          print("DONE?")
           del clip0
           del plane0
 
