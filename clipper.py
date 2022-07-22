@@ -12,16 +12,26 @@ class Clipper(VTKPythonAlgorithmBase):
         import os
         if os.path.isfile(self.saved_selection_file):
           import numpy as np
-          self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",")
+          self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",").reshape(-1,3)
+          print('Clipper load_selections', self.selections, self.selections.shape)
         else:
           print("no saved selections")
           self.selections = []
+        self.reverse = 0
         self.Modified()
 
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
         self.saved_selection_file = getenv("HOME") + "/picks.csv"
         self.load_selections()
+
+    @smproperty.xml("""
+        <IntVectorProperty name="Reverse" number_of_elements="1" default_values="0" command="SetReverse">
+            <Documentation>Reverse Single Slice</Documentation>
+        </IntVectorProperty>""")
+    def SetReverse(self, n):
+        self.reverse = n
+        self.Modified()
 
     @smproperty.stringvector(name="SavedSelection", default_values=getenv("HOME") + "/picks.csv")
     def SetSavedSelection(self, value):
@@ -45,21 +55,24 @@ class Clipper(VTKPythonAlgorithmBase):
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        if len(self.selections) < 2:
+        if len(self.selections) == 0:
           self.selections = []
           output.ShallowCopy(input.VTKObject)
           return 1
 
-        if len(self.selections) > 3:
-          print("using first 3 pick points")
-          self.selections = self.selections[:3]
+        selections = self.selections.reshape(-1,3)
 
-        if len(self.selections) == 2:
+        if len(selections) == 1:
+          selections = np.vstack(([0.0, 0.0, 1.0],selections))
+
+        if len(selections) > 3:
+          print("using first 3 pick points")
+          selections = selections[:3]
+
+        if len(selections) == 2:
           corner = False
         else:
           corner = True
-
-        selections = self.selections
 
         def cross(a,b):
           return np.array([a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]])
@@ -100,8 +113,12 @@ class Clipper(VTKPythonAlgorithmBase):
           del plane1
         else:
           disks = vtkAppendFilter()
-          p0 = nrm(selections[0])
-          p1 = nrm(selections[1])
+          if self.reverse:
+              p0 = nrm(selections[1])
+              p1 = nrm(selections[0])
+          else:
+              p0 = nrm(selections[0])
+              p1 = nrm(selections[1])
           clip0 = vtkClipDataSet()
           clip0.SetInputData(input.VTKObject)
           cut0 = cross(p0, p1)

@@ -3,10 +3,12 @@ import paraview
 import paraview.simple
 from os import getenv
 
+print("AAAA")
+
+
 @smproxy.filter()
 @smproperty.input(name="InputDataset", port_index=0)
 @smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
-
 class Disks(VTKPythonAlgorithmBase):
     def load_selections(self):
         import os
@@ -23,6 +25,15 @@ class Disks(VTKPythonAlgorithmBase):
         self.load_selections()
         self.offset = 0.001
         self.sides = 100
+        self.reverse = 0
+        self.Modified()
+
+    @smproperty.xml("""
+        <IntVectorProperty name="Reverse" number_of_elements="1" default_values="0" command="SetReverse">
+            <Documentation>Reverse Single Slice</Documentation>
+        </IntVectorProperty>""")
+    def SetReverse(self, n):
+        self.reverse = n
         self.Modified()
 
     @smproperty.xml("""
@@ -62,16 +73,21 @@ class Disks(VTKPythonAlgorithmBase):
         from math import sqrt
         import  numpy as np
 
-        if len(self.selections) < 2:
+        if len(self.selections) == 0:
           self.selections = []
-          output.ShallowCopy(input)
+          output.ShallowCopy(input.VTKObject)
           return 1
 
-        if len(self.selections) > 3:
-          print("using first 3 pick points")
-          self.selections = self.selections[:3]
+        selections = self.selections.reshape(-1,3)
 
-        if len(self.selections) == 2:
+        if len(selections) == 1:
+          selections = np.vstack(([0.0, 0.0, 1.0],selections))
+
+        if len(selections) > 3:
+          print("using first 3 pick points")
+          selections = selections[:3]
+
+        if len(selections) == 2:
           corner = False
         else:
           corner = True
@@ -79,8 +95,6 @@ class Disks(VTKPythonAlgorithmBase):
         slices = vtkAppendFilter()
         input = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfoVec[0], 0))
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
-
-        selections = self.selections
 
         def cross(a,b):
           return np.array([a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]])
@@ -142,7 +156,10 @@ class Disks(VTKPythonAlgorithmBase):
           slice_normal = nrm(cross(p0, p1))
           v1 = nrm(cross(slice_normal, p0))
           A = 2 * np.pi * (np.arange(ns)/ns)
-          xyz = (self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+          if self.reverse:
+              xyz = (-self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+          else:
+              xyz = (self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
           xyz = dsa.numpy_support.numpy_to_vtk(xyz)
           ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*ns, [0]*ns, np.arange(ns), np.mod(np.arange(ns)+1, ns))))
           ca = vtkCellArray()

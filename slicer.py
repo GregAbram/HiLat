@@ -44,30 +44,34 @@ class Slicer(VTKPythonAlgorithmBase):
         input = vtkUnstructuredGrid.GetData(inInfoVec[0], 0)
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
-        print("SLICER")
-
         def cross(a,b):
           return[a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]
 
-        if len(self.selections) < 2:
+        if len(self.selections) == 0:
           self.selections = []
-          output.ShallowCopy(input)
+          output.ShallowCopy(input.VTKObject)
           return 1
 
-        if len(self.selections) > 3:
-          print("using first 3 pick points")
-          self.selections = self.selections[:3]
+        selections = self.selections.reshape(-1,3)
 
-        if len(self.selections) == 2:
+        if len(selections) == 1:
+          selections = np.vstack(([0.0, 0.0, 1.0],selections))
+
+        if len(selections) > 3:
+          print("using first 3 pick points")
+          selections = selections[:3]
+
+        if len(selections) == 2:
           corner = False
         else:
           corner = True
 
-        print("FOOFOOFOO")
+        print('Slicer Selections', selections)
+
         if corner:
           slices = vtkAppendFilter()
-          p0 = self.selections[0]
-          for i,p1 in enumerate(self.selections[1:]):
+          p0 = selections[0]
+          for i,p1 in enumerate(selections[1:]):
             cutter = vtkCutter()
             cutter.SetInputData(input)
             cut_normal = cross(p0, p1)
@@ -96,10 +100,9 @@ class Slicer(VTKPythonAlgorithmBase):
           slices.Update()
           output.ShallowCopy(slices.GetOutput())
         else:
-          print("ELSE")
           slices = vtkAppendFilter()
-          p0 = self.selections[0]
-          p1 = self.selections[1]
+          p0 = selections[0]
+          p1 = selections[1]
           cutter = vtkCutter()
           cutter.SetInputData(input)
           cut_normal = cross(p0, p1)
@@ -119,7 +122,7 @@ class Slicer(VTKPythonAlgorithmBase):
           slices.Update()
           output.ShallowCopy(slices.GetOutput())
 
-        selections = dsa.numpy_support.numpy_to_vtk(self.selections)
+        selections = dsa.numpy_support.numpy_to_vtk(selections)
         selections.SetName("selections")
         output.GetFieldData().AddArray(selections)
 
