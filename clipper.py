@@ -13,7 +13,6 @@ class Clipper(VTKPythonAlgorithmBase):
         if os.path.isfile(self.saved_selection_file):
           import numpy as np
           self.selections = np.loadtxt(self.saved_selection_file, delimiter = ",").reshape(-1,3)
-          print('Clipper load_selections', self.selections, self.selections.shape)
         else:
           print("no saved selections")
           self.selections = []

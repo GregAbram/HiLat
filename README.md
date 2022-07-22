@@ -484,6 +484,10 @@ You can apply the Clipper filter to *any* normalized surface data.  In our case 
 
 If there is no picks.csv file (that is, the file specified in the Picker, Slicer, Clipper and Disks filters doesn't exist or is empty, no slicing will happen.   **Full saving of visualization state therefore requires that the picks.csv file be explicitly saved and restored**. Restoring a state without restoring the correct picks.csv file will produce unexpected results.
 
+### Note:
+
+Added a 'Reverse' property to Clipper and Disks to reverse the sense of siomple slices.
+
 ## TruncatePathLine
 
 A python programmable filter to truncate pathlines by age.  age=0 is the head of the pathline

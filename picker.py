@@ -40,13 +40,11 @@ class Picker(VTKPythonAlgorithmBase):
           active_selection = proxy.GetSelectionInput(proxy.Port)
           if (active_selection is not None) and (len(active_selection.IDs) > 0):
             pids = active_selection.IDs[1::2]
-            print('PICKER: as', active_selection.IDs, 'pids', pids)
             nselections = len(pids)
 
         if nselections > 0:
             try:
               selections = dsa.WrapDataObject(input).Points[pids,:]
-              print('Picker selections', selections)
               np.savetxt(self.saved_selection_file, selections, delimiter = ",")
               print("selections saved")
             except:

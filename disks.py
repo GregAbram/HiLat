@@ -3,9 +3,6 @@ import paraview
 import paraview.simple
 from os import getenv
 
-print("AAAA")
-
-
 @smproxy.filter()
 @smproperty.input(name="InputDataset", port_index=0)
 @smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
@@ -149,7 +146,6 @@ class Disks(VTKPythonAlgorithmBase):
           output.ShallowCopy(disks.GetOutput())
 
         else:
-
           p0 = nrm(selections[0])
           p1 = nrm(selections[1])
           R = sqrt(p0[0]*p0[0] + p0[1]*p0[1] + p0[2]*p0[2])
@@ -157,9 +153,9 @@ class Disks(VTKPythonAlgorithmBase):
           v1 = nrm(cross(slice_normal, p0))
           A = 2 * np.pi * (np.arange(ns)/ns)
           if self.reverse:
-              xyz = (-self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
-          else:
               xyz = (self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
+          else:
+              xyz = (-self.offset * slice_normal) + R*np.column_stack(p0[:,np.newaxis]*np.cos(A) + v1[:,np.newaxis]*np.sin(A)).astype('f4')
           xyz = dsa.numpy_support.numpy_to_vtk(xyz)
           ids = dsa.numpy_support.numpy_to_vtkIdTypeArray(np.column_stack(([3]*ns, [0]*ns, np.arange(ns), np.mod(np.arange(ns)+1, ns))))
           ca = vtkCellArray()
