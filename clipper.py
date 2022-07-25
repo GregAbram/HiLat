@@ -113,11 +113,11 @@ class Clipper(VTKPythonAlgorithmBase):
         else:
           disks = vtkAppendFilter()
           if self.reverse:
-              p0 = nrm(selections[1])
-              p1 = nrm(selections[0])
-          else:
               p0 = nrm(selections[0])
               p1 = nrm(selections[1])
+          else:
+              p0 = nrm(selections[1])
+              p1 = nrm(selections[0])
           clip0 = vtkClipDataSet()
           clip0.SetInputData(input.VTKObject)
           cut0 = cross(p0, p1)

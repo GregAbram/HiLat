@@ -23,6 +23,7 @@ class Disks(VTKPythonAlgorithmBase):
         self.offset = 0.001
         self.sides = 100
         self.reverse = 0
+        self.rscale = 0.999
         self.Modified()
 
     @smproperty.xml("""
@@ -40,6 +41,15 @@ class Disks(VTKPythonAlgorithmBase):
         </DoubleVectorProperty>""")
     def SetOffset(self, o):
         self.offset = o
+        self.Modified()
+
+    @smproperty.xml("""
+        <DoubleVectorProperty name="RScale" number_of_elements="1" default_values="0.999" command="SetRScale">
+            <DoubleRangeDomain name="range" />
+            <Documentation>scale radius of disk</Documentation>
+        </DoubleVectorProperty>""")
+    def SetRScale(self, o):
+        self.rscale = o
         self.Modified()
 
     @smproperty.xml("""
@@ -108,7 +118,7 @@ class Disks(VTKPythonAlgorithmBase):
         if corner:
           disks = vtkAppendFilter()
           corner = selections[0]
-          R = sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
+          R = self.rscale * sqrt(corner[0]*corner[0] + corner[1]*corner[1] + corner[2]*corner[2])
           corner = nrm(corner)
           first = True
           for p in selections[1:]:

@@ -66,8 +66,6 @@ class Slicer(VTKPythonAlgorithmBase):
         else:
           corner = True
 
-        print('Slicer Selections', selections)
-
         if corner:
           slices = vtkAppendFilter()
           p0 = selections[0]
