@@ -445,7 +445,9 @@ In the test data example, pass the thin shell data into the DScale filter, with 
 
 ## Corner Cuts / Slices
 
-A useful visualization technique for the ocean data (eg. ocean3D) is to use slicing to reveal vertical profiles of the volumetric data.   Two types of slicesa re implemented; simple slicing which uses two points on the surface and the center of the earth to define a slicing plane, and a corner cut that uses three points pon the surfave (plus the center of the earth to define *two* planes, resulting in a wedge.  Blank disks filling the remainder of the sides of the each slice.  Four custom Python filters are included to do this.
+A useful visualization technique for the ocean data (eg. ocean3D) is to use slicing to reveal vertical profiles of the volumetric data.   Three types of slices are implemented; longitudinal slicing, in which a single selection point chooses a line of longitude to slice along; arbitrary slicing which uses two points on the surface and the center of the earth to define a slicing plane, and a corner cut that uses three points pon the surfave (plus the center of the earth to define *two* planes, resulting in a wedge.  Blank disks filling the remainder of the sides of the each slice.  Four custom Python filters are included to do this.
+
+In the first two cases, a **Reverse** flag choowes which side of the selected plane to retain.  Not necessary for the corner cut; the orientation is defined by the counter-clockwise orientation of the selections on the surface.   Clockwise selection will result in unexpected results. 
 
 First, however, these filters ***do not work*** when the data is left in meter cordinates.  We must first normalize the data to the unit sphere using a Python programmable filter containing:
 
@@ -454,9 +456,9 @@ First, however, these filters ***do not work*** when the data is left in meter c
     rmax = np.max(r)
     output.Points = output.Points / rmax
     
-Add Python Programmanble Filters with this code to the Surface and DScale'd volumetric data.  Do not forget to check the Copy Arrays box!
+Add Python Programmable Filters with this code to the Surface and DScale'd volumetric data.  Do not forget to check the Copy Arrays box!
 
-My apologies for the complexity here... this doesn't fit well in the Paraview paradigm,
+My apologies for the complexity here...  doesn't fit well in the Paraview paradigm,
 
 ### Step 1: Selecting the Surface Points
 
@@ -466,7 +468,7 @@ Slicing planes are defined by two selection points on the surface and the center
 
 Now add the Clipper filter to the normalized surface data and Accept.   It will load the pick points from the csv file and slice of surface data.   Hit 'Accept' and hide the normalized surface data; you'll see the selected portion of the surface data.
 
-Now add the Disks filter to the normalized surface data and Accept.   It will generate the faces of the slice(s), offset very slightly inward so as not to interfere with the slices of the volumetric data.
+Now add the Disks filter to the normalized surface data and Accept.   It will generate the faces of the slice(s), offset very slightly inward so as not to interfere with the slices of the volumetric data; this offset is giten by the *Offset* parameter.  You can also reduce the radius of the disks so that, once offset, they don't extend outside the unit sphere; this is given by the *R Scale* parameter.  FInally, you can select the number of vertices around the disk.
 
 Now attach the Slicer filter to the normalized depth-scaled **volumetric** data and Accept.   This will slice the volumetric data along the slice planes.   Now you should be able to color the Slicer and Clipper outputs with the same variable and see them.
 
